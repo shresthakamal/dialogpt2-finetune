@@ -2,11 +2,12 @@ import pandas as pd
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from transformers import AdamW
 from transformers import get_scheduler
 from tqdm.auto import tqdm
 import os.path, pickle
 
+
+DATA_DIR = Path("data", "ijcnlp_dailydialog")
 
 def seputterances(row):
     try:
@@ -19,11 +20,13 @@ def seputterances(row):
 def run():
 
     if os.path.isfile(Path("data", "inturn_conversations.pkl")):
+        print(f"[INFO]: Loading saved tokens...")
+
         with open(Path("data", "inturn_conversations.pkl"), 'rb') as handle:
             tokenized_dataset = pickle.load(handle)
-
     else:
-        DATA_DIR = Path("data", "ijcnlp_dailydialog")
+        print(f"[INFO]: Saved Tokens not found, creating tokens ...")
+
         data = pd.read_csv(Path(DATA_DIR, "dialogues_text.txt"),  delimiter = "\n", names = ["dialogues"])
 
         data["dialogues"] = data["dialogues"].apply(seputterances)
@@ -53,6 +56,7 @@ def run():
         with open(Path("data", "inturn_conversations.pkl"), 'wb') as handle:
             pickle.dump(tokenized_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    print(f"[INFO]: Loading the model ...")
     model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
@@ -91,8 +95,6 @@ def run():
 
             loss = outputs.loss
 
-            # print(f"Epochs: {epoch}, Batch: {(i+4)}, Loss: {loss}")
-            
             loss.backward()
             optimizer.step()
             lr_scheduler.step()
