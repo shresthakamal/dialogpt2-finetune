@@ -1,1 +1,3 @@
-/data/inturn_conversations.pkl
+*.pkl
+*.bin
+*.json

@@ -2,11 +2,26 @@ import pandas as pd
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from transformers import AdamW
 from transformers import get_scheduler
 from tqdm.auto import tqdm
 import os.path, pickle
+import random
 
+
+SEED  = 1234
+
+random.seed(SEED)
+torch.mannual_seed(SEED)
+torch.backends.cudnn.derterministic = True
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+    device = torch.device("cuda")
+else:
+    print("[INFO]: No GPU is available, using CPU instead")
+
+
+DATA_DIR = Path("data", "ijcnlp_dailydialog")
 
 def seputterances(row):
     try:
@@ -19,11 +34,13 @@ def seputterances(row):
 def run():
 
     if os.path.isfile(Path("data", "inturn_conversations.pkl")):
+        print(f"[INFO]: Loading saved tokens...")
+
         with open(Path("data", "inturn_conversations.pkl"), 'rb') as handle:
             tokenized_dataset = pickle.load(handle)
-
     else:
-        DATA_DIR = Path("data", "ijcnlp_dailydialog")
+        print(f"[INFO]: Saved Tokens not found, creating tokens ...")
+
         data = pd.read_csv(Path(DATA_DIR, "dialogues_text.txt"),  delimiter = "\n", names = ["dialogues"])
 
         data["dialogues"] = data["dialogues"].apply(seputterances)
@@ -47,12 +64,14 @@ def run():
             dataset["S2"],
             padding=True,
             truncation=True,
+            max_length = 128,
             return_tensors = "pt"
         )
 
         with open(Path("data", "inturn_conversations.pkl"), 'wb') as handle:
             pickle.dump(tokenized_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    print(f"[INFO]: Loading the model ...")
     model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
@@ -89,16 +108,17 @@ def run():
 
             outputs = model(**inputs, labels = inputs["input_ids"])
 
-            loss = outputs.loss
+            loss = outputs.loss/n
 
-            # print(f"Epochs: {epoch}, Batch: {(i+4)}, Loss: {loss}")
-            
             loss.backward()
-            optimizer.step()
-            lr_scheduler.step()
-            optimizer.zero_grad()
+
+            if (i+1) % 8 == 0:
+                optimizer.step()
+                lr_scheduler.step()
+                optimizer.zero_grad()
             
             progress_bar.update(1)
+        model.save_pretrained("dialogpt-finetne")
 
 if __name__ == "__main__":
     run()
