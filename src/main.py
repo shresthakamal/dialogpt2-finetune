@@ -72,7 +72,7 @@ def run():
             else:
                 continue
         
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    tokenizer.pad_token = tokenizer.eos_token
 
     max_len = 32
 
@@ -111,9 +111,11 @@ def run():
     model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     model.to(device)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
-
+    clip = 2.0
     num_epochs = 3
+    
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
 
     num_training_steps = int(num_epochs * len(dataloader))
 
@@ -124,46 +126,35 @@ def run():
         num_training_steps=num_training_steps,
     )
 
-    # progress_bar = tqdm(range(num_training_steps))
 
+    ### TRAINING
+    print(f"Training the model ...\n")
     model.train()
-    print(f"Training the model ...")
-    
-    for i, batch in enumerate(dataloader):
-        b_input_ids = batch[0].to(device)
-        b_attn_mask = batch[1].to(device)
-        labels = batch[2].to(device)
+    progress_bar = tqdm(range(num_training_steps))
 
-        inputs = {"input_ids": b_input_ids, "attention_mask": b_attn_mask}
+    for epoch in range(num_epochs):
+        print("Epoch {} --------------------------".format(epoch+1))
 
-        outputs = model(**inputs, labels = labels)
+        for i, batch in enumerate(dataloader):
+            b_input_ids = batch[0].to(device)
+            b_attn_mask = batch[1].to(device)
+            labels = batch[2].to(device)
 
-        print(outputs)
-        break
+            inputs = {"input_ids": b_input_ids, "attention_mask": b_attn_mask}
 
-    # for epoch in range(num_epochs):
-    #     for i in range(len(tokenized_dataset["input_ids"])):
-    #         inputs= {}
+            optimizer.zero_grad()
+            outputs = model(**inputs, labels = labels)
+            loss = outputs.loss
 
-    #         ids = tokenized_dataset["input_ids"][:num_batch]
-    #         mask = tokenized_dataset["attention_mask"][:num_batch]
-
-    #         inputs["input_ids"] = ids.to(device)
-    #         inputs["attention_mask"] = mask.to(device)
-
-    #         outputs = model(**inputs, labels = inputs["input_ids"])
-
-    #         loss = outputs.loss/n
-
-    #         loss.backward()
-
-    #         if (i+1) % 8 == 0:
-    #             optimizer.step()
-    #             lr_scheduler.step()
-    #             optimizer.zero_grad()
+            print(f"Loss: {loss}")
             
-    #         progress_bar.update(1)
-    #     model.save_pretrained("dialogpt-finetne")
+
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+            optimizer.step()
+
+            progress_bar.update(1)
+        model.save_pretrained("dialogpt-finetne")
 
 if __name__ == "__main__":
     run()
