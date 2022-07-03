@@ -7,6 +7,7 @@ import pandas as pd
 from pathlib import Path
 
 from tqdm.auto import tqdm
+from loguru import logger
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import get_scheduler
 from torch.utils.data import TensorDataset
@@ -25,8 +26,6 @@ def seputterances(row):
 
 def run(args):
 
-    print(f"{args}")
-
     max_len = int(args["max_len"]/2)
     
     random.seed(args["seed"])
@@ -37,22 +36,24 @@ def run(args):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args["seed"])
         device = torch.device("cuda")
-        print(f"[INFO]: Working on GPU: {device}")
+        logger.info(f"Working on GPU: {device}")
     else:
-        print("[INFO]: No GPU is available, using CPU instead")
+        logger.info("No GPU is available, using CPU instead")
 
     ### TOKENIZER
-    print(f"[INFO]: Loading Tokenizer ...")
+    logger.info(f"Loading Tokenizer ...")
     tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
     tokenizer.pad_token = tokenizer.eos_token
 
 
     ### PREPARE DATASET
-    if os.path.exists(Path(args["save"], "preprocessed", "encoded_dict.pickle")) and args["prepare"] == False:
+    data_file = Path(args["save"], "preprocessed", "encoded_dict.pickle")
 
-        print(f"[INFO]: Loading Saved Dataset ...")
+    if os.path.exists(data_file) and args["prepare"] == False:
 
-        with open(Path(args["save"], "preprocessed", "encoded_dict.pickle"), 'rb') as handle:
+        logger.info(f"Loading Saved Dataset ...")
+
+        with open(data_file, 'rb') as handle:
              encoded_dict = pickle.load(handle)
 
         input_ids = encoded_dict["input_ids"]
@@ -63,7 +64,7 @@ def run(args):
         data = pd.read_csv(Path("data", "ijcnlp_dailydialog", "train", "dialogues_train.txt"),  delimiter = "\n", names = ["dialogues"])
         data["dialogues"] = data["dialogues"].apply(seputterances)
 
-        print(f"[INFO]: Preparing Dataset ...")
+        logger.info(f"Preparing Dataset ...")
         utterance = []
         history = []
 
@@ -93,13 +94,13 @@ def run(args):
         while True: 
             index = random.randint(0, len(history)-1)
             if len(history[index].split(tokenizer.eos_token))>=3:
-                print(f"\nExample:\n > {utterance[index]}\n > {history[index]}\n")
+                logger.info(f"\nExample:\n > {utterance[index]}\n > {history[index]}\n")
                 break
             else:
                 continue
 
         ### ENCODING
-        print(f"[INFO]: Creating TensorDataset and DataLoader ...")
+        logger.info(f"Creating TensorDataset and DataLoader ...")
         input_ids = []
         attention_masks = []
         labels = []
@@ -132,11 +133,11 @@ def run(args):
     dataloader = DataLoader(
             dataset,
             sampler = RandomSampler(dataset),
-            batch_size = 4
+            batch_size = args["batch"]
         )
 
 
-    print(f"[INFO]: Loading the model ...")
+    logger.info(f"Loading the model ...")
     model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     model.to(device)
 
@@ -153,27 +154,32 @@ def run(args):
 
 
     ### TRAINING
-    print(f"\nTraining the model ...\n")
+    logger.info(f"\nTraining the model ...\n")
     model.train()
     progress_bar = tqdm(range(num_training_steps))
     tbwriter = SummaryWriter(args["tensorboard"])
 
     for epoch in range(args["epochs"]):
+        losses = []
+
         for i, batch in enumerate(dataloader):
             b_input_ids = batch[0].to(device)
             b_attn_mask = batch[1].to(device)
             labels = batch[2].to(device)
-
             inputs = {"input_ids": b_input_ids, "attention_mask": b_attn_mask}
             outputs = model(**inputs, labels = labels)
-
             loss = outputs.loss / args["grad_accumulate"]
 
             if i%100 == 0:
-                print(f"Epoch: {epoch}, Batch: {i}, Loss: {loss}")
-                tbwriter.add_scalar(f"training_loss per epoch: {epoch}, iteration:_loss:", loss, i/100)
-            
+                losses.append(loss.item())
+                logger.info(f"Epoch: {epoch}, Batch: {i}, Loss: {loss}")
 
+                tbwriter.add_scalar(f"training_loss per epoch: {epoch}, iteration:_loss:", loss, i/100)
+
+                if len(losses)>=10 and all([True if round(element, 10)==0.0000000000 else False for element in losses[-1:-(10+1):-1] ]):
+                    logger.info(f"""{args["early_stop"]} consecutive minimal loss, Epoch Early Skipped.""")
+                    break
+            
             loss.backward()
             
             torch.nn.utils.clip_grad_norm_(model.parameters(),  args["clip"])
@@ -190,8 +196,11 @@ def run(args):
 
 
 if __name__ == "__main__":
+
+    logger.add("logs/{time}.log", format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> <level>{message}</level>", rotation="1 week")
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('-batch','--batch', help='Batch', required=False, default=4)
+    parser.add_argument('-batch','--batch', help='Batch', required=False, default=4, type=int)
     parser.add_argument('-epochs','--epochs', help='Training Epochs', required=False, default=3)
     parser.add_argument('-save','--save', help='Save Checkpoints', required=False, default="dialogpt-finetune")
     parser.add_argument('-lr','--lr', help='Learning Rate', required=False, default=5e-5)
@@ -202,6 +211,10 @@ if __name__ == "__main__":
     parser.add_argument('-prepare','--prepare', help='Prepare Dataset', required=False, default=False)
     parser.add_argument('-grad_accumulate','--grad_accumulate', help='Gradient Accumulation', required=False, default=8, type = int)
     parser.add_argument('-tensorboard','--tensorboard', help='Tensorboard runs', required=False, default="runs/")
+    parser.add_argument('-early_stop','--early_stop', help='Early Stopping', required=False, default=10, type = int)
 
     args = vars(parser.parse_args())
+
+    logger.info(f"{args}")
+
     run(args)
