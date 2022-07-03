@@ -1,3 +1,5 @@
 *.pkl
 *.bin
 *.json
+__pycache__
+*.pickle
