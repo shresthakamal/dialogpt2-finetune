@@ -27,7 +27,6 @@ def seputterances(row):
 def evaluate(args):
 
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args["seed"])
         device = torch.device("cuda")
         logger.info(f"Working on GPU: {device}")
     else:
@@ -36,11 +35,9 @@ def evaluate(args):
     logger.info("Loading saved tokenizer and model...")
     tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
     model = AutoModelForCausalLM.from_pretrained(Path(args["save"], "checkpoints"))
-
     model = model.to(device)
 
     model.eval()
-
     # Let's chat for 5 lines
     for step in range(5):
         # encode the new user input, add the eos_token and return a tensor in Pytorch
@@ -66,9 +63,9 @@ def run(args):
     random.seed(args["seed"])
     torch.manual_seed(args["seed"])
     torch.backends.cudnn.derterministic = True
+    torch.cuda.manual_seed_all(args["seed"])
 
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args["seed"])
         device = torch.device("cuda")
         logger.info(f"Working on GPU: {device}")
     else:
@@ -96,23 +93,17 @@ def run(args):
     else:
         data = pd.read_csv(Path("data", "ijcnlp_dailydialog", "train", "dialogues_train.txt"), delimiter="\n", names=["dialogues"])
         data["dialogues"] = data["dialogues"].apply(seputterances)
-
         logger.info(f"Preparing Dataset ...")
         utterance = []
         history = []
 
         for i in data.index:
             row = data["dialogues"][i]
-
             for idx in range(len(row)):
-
                 if idx != 0:
-
                     utterance.append(row[idx])
-
                     counter = 1
                     _history = ""
-
                     for k in range(idx - 1, -1, -1):
                         if counter <= args["context"]:
                             _history = _history + row[k]
@@ -134,10 +125,10 @@ def run(args):
 
         ### ENCODING
         logger.info(f"Creating TensorDataset and DataLoader ...")
+
         input_ids = []
         attention_masks = []
         labels = []
-
         for i in range(len(utterance)):
 
             encoded_utterance = tokenizer.encode_plus(
@@ -152,7 +143,6 @@ def run(args):
             mask = torch.cat([encoded_utterance["attention_mask"][0], encoded_history["attention_mask"][0]], dim=0).reshape(1, max_len * 2)
 
             _label = torch.tensor([1 if element != 50256 else -100 for element in encoded_history["input_ids"][0]])
-
             label = torch.cat([torch.full((max_len,), -100), _label], dim=0).reshape(1, max_len * 2)
 
             input_ids.append(ids)
@@ -174,11 +164,8 @@ def run(args):
     logger.info(f"Loading the model ...")
     model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
     model.to(device)
-
     logger.info(f"Model size: {sum(t.numel() for t in model.parameters())}")
-
     optimizer = torch.optim.AdamW(model.parameters(), lr=args["lr"])
-
     num_training_steps = int(args["epochs"] * len(dataloader))
 
     lr_scheduler = get_scheduler(
@@ -198,29 +185,25 @@ def run(args):
         running_loss = 0.0
         for i, batch in enumerate(dataloader):
 
-            optimizer.zero_grad()
-
             b_input_ids = batch[0].to(device)
             b_attn_mask = batch[1].to(device)
             labels = batch[2].to(device)
-
             inputs = {"input_ids": b_input_ids, "attention_mask": b_attn_mask}
             outputs = model(**inputs, labels=labels)
+
+            optimizer.zero_grad()
             loss = outputs.loss
 
             running_loss += loss.item()
+            if i % 100 == 0:
+                logger.info(f"Epoch: {epoch}, Batch: {i}, Loss: {running_loss/100}")
 
-            if i % 1000 == 0:
-                logger.info(f"Epoch: {epoch}, Batch: {i}, Loss: {running_loss/1000}")
-
-                tbwriter.add_scalar(f"training_loss per epoch: {epoch}, iteration:_loss:", running_loss / 1000, i / 1000)
+                tbwriter.add_scalar(f"training_loss per epoch: {epoch}, iteration:_loss:", running_loss / 100, i / 100)
                 running_loss = 0.0
 
             loss.backward()
-
-            # torch.nn.utils.clip_grad_norm_(model.parameters(),  args["clip"])
-
             optimizer.step()
+            lr_scheduler.step()
             progress_bar.update(1)
 
         model.save_pretrained(Path(args["save"], "checkpoints"))

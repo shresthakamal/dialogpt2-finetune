@@ -1,0 +1,3 @@
+2022-07-04 at 17:11:02 {'batch': 8, 'epochs': 3, 'save': 'dialogpt-finetune', 'lr': 5e-05, 'clip': 2.0, 'seed': 1234, 'context': 3, 'max_len': 128, 'prepare': False, 'grad_accumulate': 8, 'tensorboard': 'runs/', 'early_stop': 10, 'eval': False}
+2022-07-04 at 17:11:02 Working on GPU: cuda
+2022-07-04 at 17:11:02 Loading Tokenizer ...

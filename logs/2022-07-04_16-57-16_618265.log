@@ -12,3 +12,4 @@ Example:
 2022-07-04 at 16:59:35 Model size: 354823168
 2022-07-04 at 16:59:36 Training the model ...
 2022-07-04 at 16:59:36 Epoch: 0, Batch: 0, Loss: 0.02325089645385742
+2022-07-04 at 17:06:38 Epoch: 0, Batch: 1000, Loss: 0.09720508853667831
