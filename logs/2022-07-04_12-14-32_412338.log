@@ -1,0 +1,22 @@
+2022-07-04 at 12:14:32 {'batch': 4, 'epochs': 3, 'save': 'dialogpt-finetune', 'lr': 5e-05, 'clip': 2.0, 'seed': 1234, 'context': 3, 'max_len': 128, 'prepare': 'True', 'grad_accumulate': 8, 'tensorboard': 'runs/', 'early_stop': 10, 'eval': False}
+2022-07-04 at 12:14:32 Working on GPU: cuda
+2022-07-04 at 12:14:32 Loading Tokenizer ...
+2022-07-04 at 12:14:42 Preparing Dataset ...
+2022-07-04 at 12:14:42 
+Example:
+ >  Yes , I will . Have a nice flight back . 
+ >  Please let me know when you go to China and let me be of some assistance to you . <|endoftext|> Don't mention it . <|endoftext|> I appreciate all help of you during my stay here . <|endoftext|>
+
+2022-07-04 at 12:14:42 Creating TensorDataset and DataLoader ...
+2022-07-04 at 12:15:55 Loading the model ...
+2022-07-04 at 12:16:06 Training the model ...
+2022-07-04 at 12:16:06 Epoch: 0, Batch: 0, Loss: 23.103168487548828
+2022-07-04 at 12:16:32 Epoch: 0, Batch: 100, Loss: 7.064953479130054e-06
+2022-07-04 at 12:16:58 Epoch: 0, Batch: 200, Loss: 4.300365162634989e-06
+2022-07-04 at 12:17:24 Epoch: 0, Batch: 300, Loss: 5.854712526343064e-06
+2022-07-04 at 12:17:50 Epoch: 0, Batch: 400, Loss: 1.8044341913991957e-06
+2022-07-04 at 12:18:16 Epoch: 0, Batch: 500, Loss: 1.057049985320191e-06
+2022-07-04 at 12:18:42 Epoch: 0, Batch: 600, Loss: 1.3574000377047923e-06
+2022-07-04 at 12:19:08 Epoch: 0, Batch: 700, Loss: 1.4635712659583078e-06
+2022-07-04 at 12:19:34 Epoch: 0, Batch: 800, Loss: 4.949977210344514e-07
+2022-07-04 at 12:20:00 Epoch: 0, Batch: 900, Loss: 4.558822581657296e-07
