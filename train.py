@@ -139,8 +139,3 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args["seed"])
 
     train(args)
-
-    # TODO
-    # -   Gradient Accumulation
-    # -   Gradient Clipping
-    # -   Proper Verbose
