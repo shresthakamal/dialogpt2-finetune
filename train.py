@@ -97,7 +97,7 @@ def train(args):
             if i % 100 == 0 and i != 0:
                 logger.info(f"Epoch: {epoch}, Batch: {i}, Loss: {running_loss/100}")
 
-                tbwriter.add_scalar(f"Training loss: {epoch}:", running_loss / 100, i / 100)
+                tbwriter.add_scalar(f"Training loss", running_loss / 100, i / 100)
                 running_loss = 0.0
 
             if i % 5000 == 0 and i != 0 and args["eval"] == True:
@@ -118,11 +118,10 @@ def train(args):
                         outputs = model(**inputs, labels=tlabels)
 
                         loss = outputs.loss
-
                         test_loss += loss.item()
 
-                    logger.info(f"\nEpoch: {epoch}, Batch: {i}, Testing Loss: {test_loss/ len(test_dataloader)}")
-                    tbwriter.add_scalar(f"Testing loss: {epoch}", test_loss / len(test_dataloader), epoch)
+                    logger.info(f"\nEpoch: {epoch}, Testing Loss: {test_loss/ len(test_dataloader)}")
+                    tbwriter.add_scalar(f"Testing loss", test_loss / len(test_dataloader), epoch)
                 model.train()
 
 
