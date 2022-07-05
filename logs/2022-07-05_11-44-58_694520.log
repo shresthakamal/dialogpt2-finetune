@@ -1,0 +1,18 @@
+2022-07-05 at 11:44:58 {'batch': 4, 'epochs': 3, 'save': 'dialogpt-finetune', 'lr': 1e-05, 'clip': 2.0, 'seed': 0, 'context': 3, 'max_len': 128, 'prepare': 'True', 'grad_accumulate': 8, 'tensorboard': 'runs/', 'early_stop': 10, 'eval': False}
+2022-07-05 at 11:44:58 Working on GPU: cuda
+2022-07-05 at 11:44:58 Loading Tokenizer ...
+2022-07-05 at 11:45:08 Preparing Dataset ...
+2022-07-05 at 11:45:09 Creating TensorDataset and DataLoader ...
+2022-07-05 at 11:46:36 Pre-Trained Model loaded, 354823168
+2022-07-05 at 11:46:36 Training the model ..., num_training_steps: 57039
+2022-07-05 at 11:47:03 Epoch: 0, Batch: 100, Loss: 3.6468015623092653
+2022-07-05 at 11:47:29 Epoch: 0, Batch: 200, Loss: 3.132968521118164
+2022-07-05 at 11:47:55 Epoch: 0, Batch: 300, Loss: 3.0243706035614015
+2022-07-05 at 11:48:21 Epoch: 0, Batch: 400, Loss: 2.983454179763794
+2022-07-05 at 11:48:47 Epoch: 0, Batch: 500, Loss: 2.96991578578949
+2022-07-05 at 11:49:13 Epoch: 0, Batch: 600, Loss: 2.901685960292816
+2022-07-05 at 11:49:39 Epoch: 0, Batch: 700, Loss: 2.855980625152588
+2022-07-05 at 11:50:05 Epoch: 0, Batch: 800, Loss: 2.898600900173187
+2022-07-05 at 11:50:31 Epoch: 0, Batch: 900, Loss: 2.780817275047302
+2022-07-05 at 11:50:57 Epoch: 0, Batch: 1000, Loss: 2.882380806207657
+2022-07-05 at 11:51:23 Epoch: 0, Batch: 1100, Loss: 2.810739325284958
