@@ -10,7 +10,9 @@ def argument_parser():
     parser.add_argument("-clip", "--clip", help="Gradient Clip", required=False, default=2.0)
     parser.add_argument("-seed", "--seed", help="Seed", required=False, default=0)
     parser.add_argument("-context", "--context", help="Number Context", required=False, default=3)
-    parser.add_argument("-max_len", "--max_len", help="Maximum length of tokens", required=False, default=128, type=int)
+    parser.add_argument(
+        "-max_len", "--max_len", help="Maximum length of tokens", required=False, default=128, type=int
+    )
     parser.add_argument("-prepare", "--prepare", help="Prepare Dataset", required=False, default=False)
     parser.add_argument(
         "-grad_accumulate", "--grad_accumulate", help="Gradient Accumulation", required=False, default=8, type=int
