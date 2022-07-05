@@ -15,15 +15,6 @@ from options import argument_parser
 from utils import logging
 
 
-def seputterances(row):
-    try:
-        row = row.split("__eou__")
-        row = row[:-1]
-        return row
-    except:
-        return row
-
-
 def run(args):
 
     max_len = int(args["max_len"] / 2)
