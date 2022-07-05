@@ -10,7 +10,6 @@ from transformers import get_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
 from options import argument_parser
-from make_dataset import prepare_data
 from generate_inputs import generate_inputs
 from utils import logging
 
