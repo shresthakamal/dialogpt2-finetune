@@ -26,7 +26,7 @@ def prepare_data(file_path, tokenizer, num_context):
     for i in data.index:
         row = data["dialogues"][i]
         for idx in range(len(row)):
-            if idx >= 3:
+            if idx >= num_context:
                 utterance.append(row[idx])
                 counter = 1
                 _history = ""

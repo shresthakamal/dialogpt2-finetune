@@ -3,7 +3,7 @@ import argparse
 
 def argument_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-batch", "--batch", help="Batch", required=False, default=4, type=int)
+    parser.add_argument("-batch", "--batch", help="Batch", required=False, default=8, type=int)
     parser.add_argument("-epochs", "--epochs", help="Training Epochs", required=False, default=3)
     parser.add_argument("-save", "--save", help="Save Checkpoints", required=False, default="dialogpt-finetune")
     parser.add_argument("-lr", "--lr", help="Learning Rate", required=False, default=1e-5)

@@ -87,8 +87,10 @@ def train(args):
 
             loss = outputs.loss
             loss.backward()
-            optimizer.step()
-            lr_scheduler.step()
+
+            if i % args["grad_accumulate"] == 0:
+                optimizer.step()
+                lr_scheduler.step()
 
             progress_bar.update(1)
 
@@ -99,7 +101,7 @@ def train(args):
                 tbwriter.add_scalar(f"Training loss", running_loss / 100, i / 100)
                 running_loss = 0.0
 
-            if i % 5000 == 0 and i != 0 and args["eval"] == True:
+            if i % 500 == 0 and i != 0 and args["eval"] == True:
                 model.save_pretrained(Path(args["save"], "checkpoints"))
 
                 ### EVALUATION
@@ -119,7 +121,7 @@ def train(args):
                         loss = outputs.loss
                         test_loss += loss.item()
 
-                    logger.info(f"\nEpoch: {epoch}, Testing Loss: {test_loss/ len(test_dataloader)}")
+                    logger.info(f"Epoch: {epoch}, Testing Loss: {test_loss/ len(test_dataloader)}")
                     tbwriter.add_scalar(f"Testing loss", test_loss / len(test_dataloader), epoch)
                 model.train()
 
